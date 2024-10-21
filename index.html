@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPS Test with Jumpscare</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #333333, #1a1a1a);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            color: white;
+        }
+
+        .container {
+            width: 320px;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #2b2b2b;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            flex: 1;
+            margin: 0 5px;
+            padding: 10px;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #7b2ff7, #00d2ff);
+            text-align: center;
+        }
+
+        .stat-box:nth-child(2) {
+            background: linear-gradient(45deg, #ff7e2f, #ff0037);
+        }
+
+        .stat-box:nth-child(3) {
+            background: linear-gradient(45deg, #32ff7e, #00ff97);
+        }
+
+        #clickArea {
+            width: 300px;
+            height: 300px;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            margin: 20px auto;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #00d2ff;
+            color: white;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        #popup {
+            display: none;
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        video {
+            display: none;
+            position: absolute;
+            object-fit: cover;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 999;
+        }
+
+        #tryAgainButton {
+            display: none;
+            padding: 10px 20px;
+            background-color: #ff0037;
+            color: white;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">CPS TEST / CPS TESTER
+        min allowed: 20cps</div>
+        <div class="stats">
+            <div class="stat-box">
+                <div>Timer</div>
+                <div id="timeRemaining">0</div>
+            </div>
+            <div class="stat-box">
+                <div>Click/s</div>
+                <div id="cps">0</div>
+            </div>
+            <div class="stat-box">
+                <div>Score</div>
+                <div id="score">0</div>
+            </div>
+        </div>
+        <div id="clickArea">click here</div>
+        <button id="startButton">Start Test</button>
+
+        <video id="scareVideo" src="video.mp4" loop=""></video>
+        <button id="tryAgainButton">Try Again</button>
+    </div>
+
+    <script>
+        let clickCount = 0;
+        let maxCPS = 0;
+        let startTime, intervalId, cpsUpdateId;
+        let testDuration = 10; // Default test duration in seconds
+        let timeRemaining = testDuration;
+        let isTestRunning = false;
+
+        const cpsThreshold = 20; // CPS threshold for jumpscare
+        const cpsUpdateInterval = 1; // CPS update interval in milliseconds
+        const decimalPlaces = 2; // Number of decimal places for CPS
+
+        const clickArea = document.getElementById('clickArea');
+        const startButton = document.getElementById('startButton');
+        const tryAgainButton = document.getElementById('tryAgainButton');
+        const timeRemainingElement = document.getElementById('timeRemaining');
+        const cpsElement = document.getElementById('cps');
+        const scoreElement = document.getElementById('score');
+        const totalClicksElement = document.getElementById('totalClicks');
+        const maxCPSElement = document.getElementById('maxCPS');
+        const popupTimeRemaining = document.getElementById('popupTimeRemaining');
+        const elapsedTimeElement = document.getElementById('elapsedTime');
+        const scareVideo = document.getElementById('scareVideo');
+        const popup = document.getElementById('popup');
+
+        // Start button event listener
+        startButton.addEventListener('click', () => {
+            startButton.style.display = 'none';
+            startCountdown();
+        });
+
+        // Start the 3-second countdown
+        function startCountdown() {
+            let countdown = 3;
+            const countdownInterval = setInterval(() => {
+                clickArea.textContent = `Starting in ${countdown}...`;
+                countdown--;
+                if (countdown === 0) {
+                    clearInterval(countdownInterval);
+                    clickArea.textContent = 'CLICK HERE TO START PLAYING';
+                    startTest();
+                }
+            }, 1000);
+        }
+
+        // Start the test
+        function startTest() {
+            isTestRunning = true;
+            clickCount = 0;
+            startTime = Date.now();
+            timeRemaining = testDuration;
+
+            updateCPS();
+            updateTimer();
+
+            clickArea.addEventListener('touchstart', handleClick, { passive: true });
+            clickArea.addEventListener('mousedown', handleClick);
+        }
+
+        // Handle click events (multi-touch supported)
+        function handleClick(event) {
+            if (!isTestRunning) return;
+            clickCount += event.touches ? event.touches.length : 1;
+            scoreElement.textContent = clickCount;
+        }
+
+        // Update CPS at the specified interval
+        function updateCPS() {
+            cpsUpdateId = setInterval(() => {
+                const elapsedTime = (Date.now() - startTime) / 1000;
+                const cps = clickCount / elapsedTime;
+                cpsElement.textContent = cps.toFixed(decimalPlaces);
+                if (cps > maxCPS) maxCPS = cps;
+
+                updatePopup(elapsedTime);
+            }, cpsUpdateInterval);
+        }
+
+        // Update the test timer
+        function updateTimer() {
+            intervalId = setInterval(() => {
+                timeRemaining--;
+                timeRemainingElement.textContent = timeRemaining;
+
+                if (timeRemaining <= 0) {
+                    endTest();
+                }
+            }, 1000);
+        }
+
+        // Update the popup with real-time data
+        function updatePopup(elapsedTime) {
+            totalClicksElement.textContent = clickCount;
+            maxCPSElement.textContent = maxCPS.toFixed(decimalPlaces);
+            popupTimeRemaining.textContent = timeRemaining;
+            elapsedTimeElement.textContent = elapsedTime.toFixed(2);
+            popup.style.display = 'block';
+        }
+
+        // End the test and show the results
+        function endTest() {
+            isTestRunning = false;
+            clearInterval(intervalId);
+            clearInterval(cpsUpdateId);
+
+            if (maxCPS < cpsThreshold) {
+                scareVideo.style.display = 'block';
+                scareVideo.play();
+            }
+
+            tryAgainButton.style.display = 'block';
+            tryAgainButton.addEventListener('click', () => location.reload());
+        }
+    </script>
+</body>
+</html>
