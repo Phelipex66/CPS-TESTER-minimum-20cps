@@ -28,13 +28,15 @@
 
         .header {
             font-size: 1.5rem;
+            font-weight: 610;
             margin-bottom: 20px;
         }
 
         .stats {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            font-weight: 1000;
         }
 
         .stat-box {
@@ -57,12 +59,13 @@
         #clickArea {
             width: 300px;
             height: 300px;
-            background-color: #000;
+            background-color: #000000;
             display: flex;
             justify-content: center;
             align-items: center;
             color: white;
             font-size: 1.2rem;
+            font-weight: 1000;
             border-radius: 10px;
             margin: 20px auto;
             cursor: pointer;
@@ -70,7 +73,7 @@
 
         button {
             padding: 10px 20px;
-            background-color: #00d2ff;
+            background-color: #7000FF;
             color: white;
             border: none;
             font-size: 1rem;
@@ -105,10 +108,11 @@
         #tryAgainButton {
             display: none;
             padding: 10px 20px;
-            background-color: #ff0037;
+            background-color: #00EBFF;
             color: white;
             border: none;
             font-size: 1rem;
+            font-weight: 1000;
             cursor: pointer;
             border-radius: 5px;
         }
@@ -176,12 +180,12 @@
             const countdownInterval = setInterval(() => {
                 clickArea.textContent = `Starting in ${countdown}...`;
                 countdown--;
-                if (countdown === 0) {
+                if (countdown == -2) {
                     clearInterval(countdownInterval);
                     clickArea.textContent = 'CLICK HERE TO START PLAYING';
                     startTest();
                 }
-            }, 1000);
+            }, 900);
         }
 
         // Start the test
